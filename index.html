@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insertion Sort Visualizer | Interactive Educational Lab</title>
+  <meta name="description" content="A portfolio-grade, interactive educational web app visualizing the Insertion Sort algorithm through the playing cards metaphor. Features 60fps animations, step-by-step playback, quiz mode, challenge mode, and live complexity analysis.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient Gradient Background Shapes -->
+  <div class="ambient-glow glow-1" aria-hidden="true"></div>
+  <div class="ambient-glow glow-2" aria-hidden="true"></div>
+  <div class="ambient-glow glow-3" aria-hidden="true"></div>
+
+  <!-- Confetti Canvas -->
+  <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+  <!-- Particle Burst Canvas -->
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+  <!-- Toast Notification Hub -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Header / Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="brand-icon">
+        <span class="suit-symbol suit-spade">♠</span>
+        <span class="brand-bars">
+          <span class="bar-pip b1"></span>
+          <span class="bar-pip b2"></span>
+          <span class="bar-pip b3"></span>
+        </span>
+      </div>
+      <div class="brand-text">
+        <h1>Insertion Sort <span class="gradient-text">Lab</span></h1>
+        <p class="brand-subtitle">Interactive Playing Cards & Bars Visualizer</p>
+      </div>
+    </div>
+
+    <!-- Mode Selector: Visualizer / Quiz / Challenge -->
+    <div class="mode-switch-group" role="tablist" aria-label="Application Mode">
+      <button id="mode-btn-viz" class="mode-btn active" role="tab" aria-selected="true" data-mode="visualizer">
+        <span class="icon">🎬</span> Visualizer
+      </button>
+      <button id="mode-btn-quiz" class="mode-btn" role="tab" aria-selected="false" data-mode="quiz">
+        <span class="icon">❓</span> Quiz Mode
+      </button>
+      <button id="mode-btn-challenge" class="mode-btn" role="tab" aria-selected="false" data-mode="challenge">
+        <span class="icon">🏆</span> Challenge Mode
+      </button>
+    </div>
+
+    <!-- Quick Utilities -->
+    <div class="nav-actions">
+      <!-- Visual Style Toggle: Cards vs Bars -->
+      <div class="toggle-switch-wrapper" title="Switch visual representation">
+        <span class="toggle-label" id="view-mode-label">Mode:</span>
+        <div class="segmented-control" role="group" aria-labelledby="view-mode-label">
+          <button id="view-cards-btn" class="seg-btn active" title="Playing Cards Metaphor" aria-pressed="true">
+            🃏 Cards
+          </button>
+          <button id="view-bars-btn" class="seg-btn" title="Classic Neon Bars" aria-pressed="false">
+            📊 Bars
+          </button>
+        </div>
+      </div>
+
+      <!-- Sound Toggle -->
+      <button id="sound-toggle-btn" class="icon-btn" title="Toggle Sound (M)" aria-label="Toggle Sound">
+        <span id="sound-icon">🔊</span>
+      </button>
+
+      <!-- Keyboard Shortcuts Help -->
+      <button id="shortcuts-btn" class="icon-btn" title="Keyboard Shortcuts (?)" aria-label="Show Keyboard Shortcuts">
+        <span>⌨️</span>
+      </button>
+
+      <!-- Theme Toggle -->
+      <button id="theme-toggle-btn" class="icon-btn" title="Toggle Dark/Light Theme (T)" aria-label="Toggle Theme">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <main class="main-layout">
+    
+    <!-- TOP NOTIFICATION BANNER (For Quiz & Challenge modes) -->
+    <section id="interactive-mode-banner" class="interactive-mode-banner hidden" aria-live="polite">
+      <div class="banner-content">
+        <div class="banner-badge" id="banner-badge">QUIZ ACTIVE</div>
+        <div class="banner-text" id="banner-text">Where should key card <strong>5</strong> be inserted? Click on the target slot!</div>
+      </div>
+      <div class="banner-stats" id="banner-stats">
+        <div class="stat-pill"><span class="stat-label">Score:</span> <strong id="quiz-score">0</strong></div>
+        <div class="stat-pill"><span class="stat-label">Streak:</span> <strong id="quiz-streak">0 🔥</strong></div>
+        <button id="banner-action-btn" class="btn btn-sm btn-accent">Next Question</button>
+      </div>
+    </section>
+
+    <!-- SECTION 1: THE ARENA / VISUALIZATION STAGE -->
+    <section class="stage-section card-glass" aria-label="Algorithm Animation Stage">
+      <!-- Stage Header with Progress & Mascot -->
+      <div class="stage-header">
+        <div class="stage-meta">
+          <div class="stage-badge" id="pass-indicator">Pass: <strong>Ready</strong></div>
+          <div class="progress-wrap" title="Sorting Progress">
+            <div class="progress-bar-bg">
+              <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+            <span id="progress-percent" class="progress-text">0% Sorted</span>
+          </div>
+        </div>
+
+        <!-- Animated Mascot "Sorty" -->
+        <div class="mascot-container" id="mascot" title="Sorty the Algorithm Assistant">
+          <div class="mascot-bubble" id="mascot-speech">Ready to sort! Pick a preset or hit Play!</div>
+          <div class="mascot-svg-wrap">
+            <svg class="mascot-svg" viewBox="0 0 100 100" width="60" height="60" aria-label="Sorty Mascot">
+              <defs>
+                <linearGradient id="botGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#38bdf8" />
+                  <stop offset="100%" stop-color="#6366f1" />
+                </linearGradient>
+                <linearGradient id="visorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#0f172a" />
+                  <stop offset="100%" stop-color="#1e293b" />
+                </linearGradient>
+              </defs>
+              <!-- Robot Body / Card Cape -->
+              <rect x="22" y="32" width="56" height="52" rx="14" fill="url(#botGrad)" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.3))" />
+              <!-- Antenna -->
+              <line x1="50" y1="32" x2="50" y2="14" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" />
+              <circle cx="50" cy="12" r="6" fill="#fbbf24" class="mascot-antenna-light" />
+              <!-- Visor / Face Screen -->
+              <rect x="30" y="44" width="40" height="26" rx="8" fill="url(#visorGrad)" stroke="#38bdf8" stroke-width="1.5" />
+              <!-- Animated Eyes -->
+              <g class="mascot-eyes" id="mascot-eyes">
+                <circle cx="42" cy="57" r="4.5" fill="#38bdf8" class="eye eye-left" />
+                <circle cx="58" cy="57" r="4.5" fill="#38bdf8" class="eye eye-right" />
+              </g>
+              <!-- Ears / Screws -->
+              <rect x="16" y="52" width="6" height="10" rx="3" fill="#94a3b8" />
+              <rect x="78" y="52" width="6" height="10" rx="3" fill="#94a3b8" />
+              <!-- Chest Suit Emblem -->
+              <text x="50" y="78" font-size="11" text-anchor="middle" fill="#fbbf24" font-weight="bold">♠</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Color Legend Bar -->
+      <div class="legend-bar" aria-label="Color Legend">
+        <div class="legend-item"><span class="legend-dot dot-key"></span> <strong>Key (Lifted)</strong></div>
+        <div class="legend-item"><span class="legend-dot dot-compare"></span> <strong>Comparing</strong></div>
+        <div class="legend-item"><span class="legend-dot dot-shift"></span> <strong>Shifted Right</strong></div>
+        <div class="legend-item"><span class="legend-dot dot-sorted"></span> <strong>Sorted Region</strong></div>
+        <div class="legend-item"><span class="legend-dot dot-unsorted"></span> <strong>Unsorted</strong></div>
+      </div>
+
+      <!-- THE VISUALIZATION ARENA -->
+      <div class="arena-wrapper" id="arena-wrapper">
+        <!-- Sorted Region Bracket & Underline Indicator -->
+        <div class="sorted-boundary-bracket" id="sorted-bracket" style="display: none;">
+          <div class="bracket-line"></div>
+          <div class="bracket-label"><span class="bracket-tag">✓ Sorted Partition [0..i]</span></div>
+        </div>
+
+        <!-- Arrow Pointers for i and j -->
+        <div class="pointers-lane" id="pointers-lane" aria-hidden="true">
+          <div class="pointer-arrow pointer-i" id="pointer-i" style="display: none;">
+            <span class="pointer-badge">i (Key)</span>
+            <div class="arrow-down"></div>
+          </div>
+          <div class="pointer-arrow pointer-j" id="pointer-j" style="display: none;">
+            <span class="pointer-badge">j (Scan)</span>
+            <div class="arrow-down"></div>
+          </div>
+        </div>
+
+        <!-- The Track where cards or bars live -->
+        <div class="card-track" id="card-track" role="region" aria-label="Cards Track">
+          <!-- Dynamically populated card or bar nodes -->
+        </div>
+
+        <!-- Slot Indices Lane underneath -->
+        <div class="slots-lane" id="slots-lane" aria-hidden="true">
+          <!-- Dynamically populated slot numbers -->
+        </div>
+
+        <!-- Drop target markers for Challenge & Quiz Mode -->
+        <div class="drop-zones-lane" id="drop-zones-lane" style="display: none;">
+          <!-- Dynamically placed drop zones -->
+        </div>
+      </div>
+
+      <!-- Live Step Narration Box -->
+      <div class="narration-box" id="narration-box" role="status" aria-live="polite">
+        <div class="narration-icon-wrap">
+          <span class="narration-pulse"></span>
+          <span class="narration-icon">💡</span>
+        </div>
+        <div class="narration-content">
+          <span class="narration-step-tag" id="narration-tag">STEP 0</span>
+          <p class="narration-text" id="narration-text">
+            Welcome! Insertion Sort builds a sorted array one item at a time, just like picking up cards and sliding each one into its proper place in your hand. Click <strong>Play</strong> or <strong>Step Forward</strong> to begin!
+          </p>
+        </div>
+      </div>
+
+      <!-- TIMELINE SCRUBBER & CONTROLS -->
+      <div class="stage-controls">
+        <!-- Scrubbing Slider -->
+        <div class="scrubber-container">
+          <span class="scrub-label">Timeline:</span>
+          <input type="range" id="step-scrubber" min="0" max="0" value="0" step="1" aria-label="Step Timeline Scrubber" class="timeline-slider">
+          <span class="scrub-counter" id="scrubber-counter">0 / 0</span>
+        </div>
+
+        <!-- Main Action Buttons -->
+        <div class="playback-btn-group">
+          <button id="btn-reset" class="btn btn-secondary" title="Reset to initial state (R)">
+            <span class="btn-icon">↺</span> Reset
+          </button>
+          <button id="btn-step-back" class="btn btn-secondary" title="Step Backward (Left Arrow)">
+            <span class="btn-icon">⏮</span> Step Back
+          </button>
+          <button id="btn-play-pause" class="btn btn-primary btn-pulse" title="Play / Pause (Space)">
+            <span class="btn-icon" id="play-pause-icon">▶</span> <span id="play-pause-text">Play</span>
+          </button>
+          <button id="btn-step-forward" class="btn btn-secondary" title="Step Forward (Right Arrow)">
+            <span class="btn-icon">⏭</span> Step Next
+          </button>
+        </div>
+
+        <!-- Speed Control -->
+        <div class="speed-control-group">
+          <span class="control-label">Speed:</span>
+          <input type="range" id="speed-slider" min="0.25" max="3" step="0.25" value="1" aria-label="Animation Speed Slider" class="range-slider">
+          <span class="speed-badge" id="speed-display">1.0x</span>
+        </div>
+      </div>
+
+      <!-- ARRAY CONFIGURATION & PRESETS ROW -->
+      <div class="config-bar">
+        <div class="config-item custom-input-group">
+          <label for="custom-array-input" class="config-label">Custom Array:</label>
+          <div class="input-with-button">
+            <input type="text" id="custom-array-input" placeholder="e.g. 12, 5, 18, 7, 2, 9" aria-label="Custom array numbers separated by commas">
+            <button id="btn-apply-custom" class="btn btn-sm btn-accent">Apply</button>
+          </div>
+        </div>
+
+        <div class="config-item size-slider-group">
+          <label for="array-size-slider" class="config-label">Size: <strong id="array-size-display">8</strong></label>
+          <input type="range" id="array-size-slider" min="5" max="15" value="8" step="1" class="range-slider" aria-label="Array Size Slider">
+        </div>
+
+        <div class="config-item presets-group">
+          <span class="config-label">Presets:</span>
+          <div class="preset-pills" role="group" aria-label="Array Presets">
+            <button class="preset-pill active" data-preset="random">🎲 Random</button>
+            <button class="preset-pill" data-preset="nearly-sorted" title="Best Case Demo O(n)">📈 Nearly Sorted</button>
+            <button class="preset-pill" data-preset="reversed" title="Worst Case Demo O(n²)">📉 Reverse</button>
+            <button class="preset-pill" data-preset="sorted" title="Already Sorted O(n)">✓ Sorted</button>
+            <button class="preset-pill" data-preset="duplicates" title="Demonstrates Algorithm Stability">👯 Duplicates</button>
+          </div>
+          <button id="btn-randomize" class="btn btn-sm btn-secondary" title="Generate New Random Hand">
+            ⚡ Shuffle
+          </button>
+        </div>
+      </div>
+
+      <!-- Drag to reorder hint -->
+      <div class="drag-hint-banner" id="drag-hint">
+        <span>✋ <em>Interactive:</em> Drag and drop any card to reorder your hand before sorting!</span>
+      </div>
+    </section>
+
+    <!-- SECTION 2: LEARNING DOCK (Pseudocode, Variables, Metrics, Code Tabs) -->
+    <section class="learning-grid" aria-label="Educational Panels">
+      
+      <!-- Panel 1: Live Pseudocode with Active Line Highlighting -->
+      <div class="learning-card card-glass pseudocode-card">
+        <div class="card-head">
+          <div class="head-title">
+            <span class="head-icon">📜</span>
+            <h3>Live Pseudocode</h3>
+          </div>
+          <span class="badge-subtle">Synced with Animation</span>
+        </div>
+        <div class="pseudocode-viewport">
+          <pre class="pseudocode-pre"><code id="pseudocode-code">
+<span class="code-line" data-line="1"><span class="line-num">1</span> <span class="kw">for</span> <span class="var">i</span> = 1 <span class="kw">to</span> <span class="var">n</span> - 1:</span>
+<span class="code-line" data-line="2"><span class="line-num">2</span>   <span class="var">key</span> = A[<span class="var">i</span>]</span>
+<span class="code-line" data-line="3"><span class="line-num">3</span>   <span class="var">j</span> = <span class="var">i</span> - 1</span>
+<span class="code-line" data-line="4"><span class="line-num">4</span>   <span class="kw">while</span> <span class="var">j</span> >= 0 <span class="kw">and</span> A[<span class="var">j</span>] > <span class="var">key</span>:</span>
+<span class="code-line" data-line="5"><span class="line-num">5</span>     A[<span class="var">j</span> + 1] = A[<span class="var">j</span>]        <span class="cm">// Shift right</span></span>
+<span class="code-line" data-line="6"><span class="line-num">6</span>     <span class="var">j</span> = <span class="var">j</span> - 1</span>
+<span class="code-line" data-line="7"><span class="line-num">7</span>   A[<span class="var">j</span> + 1] = <span class="var">key</span>           <span class="cm">// Insert key</span></span>
+</code></pre>
+        </div>
+        <!-- Variables Inspector Inside Pseudocode Card -->
+        <div class="variables-strip" aria-label="Variables Inspector">
+          <div class="var-pill"><span class="var-name">i</span> = <strong id="var-i-val" class="var-val">-</strong></div>
+          <div class="var-pill"><span class="var-name">j</span> = <strong id="var-j-val" class="var-val">-</strong></div>
+          <div class="var-pill var-pill-gold"><span class="var-name">key</span> = <strong id="var-key-val" class="var-val">-</strong></div>
+          <div class="var-pill"><span class="var-name">A[j] &gt; key</span>: <strong id="var-cond-val" class="var-val">-</strong></div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Live Metrics & Execution Counters -->
+      <div class="learning-card card-glass metrics-card">
+        <div class="card-head">
+          <div class="head-title">
+            <span class="head-icon">⚡</span>
+            <h3>Live Telemetry</h3>
+          </div>
+          <span class="badge-subtle">Real-time Counters</span>
+        </div>
+        <div class="counters-grid">
+          <div class="metric-box">
+            <span class="metric-icon">🔍</span>
+            <div class="metric-data">
+              <span class="metric-value" id="counter-comparisons">0</span>
+              <span class="metric-label">Comparisons</span>
+            </div>
+            <span class="metric-bound" id="bound-comparisons">O(n) to O(n²)</span>
+          </div>
+
+          <div class="metric-box">
+            <span class="metric-icon">🔄</span>
+            <div class="metric-data">
+              <span class="metric-value" id="counter-shifts">0</span>
+              <span class="metric-label">Shifts / Writes</span>
+            </div>
+            <span class="metric-bound" id="bound-shifts">Data movement</span>
+          </div>
+
+          <div class="metric-box">
+            <span class="metric-icon">🎯</span>
+            <div class="metric-data">
+              <span class="metric-value" id="counter-passes">0 / 0</span>
+              <span class="metric-label">Outer Passes (i)</span>
+            </div>
+            <span class="metric-bound">Subarray building</span>
+          </div>
+
+          <div class="metric-box">
+            <span class="metric-icon">⏱️</span>
+            <div class="metric-data">
+              <span class="metric-value" id="counter-steps">0</span>
+              <span class="metric-label">Micro-steps</span>
+            </div>
+            <span class="metric-bound">Atomic operations</span>
+          </div>
+        </div>
+
+        <!-- Complexity Matrix -->
+        <div class="complexity-subpanel">
+          <div class="subpanel-title">Asymptotic Complexity</div>
+          <div class="complexity-chips">
+            <div class="comp-chip" id="chip-best" title="Best Case: When array is already sorted">
+              <span class="chip-label">Best Case</span>
+              <strong class="chip-val">O(n)</strong>
+            </div>
+            <div class="comp-chip" id="chip-avg" title="Average Case: Random permutation">
+              <span class="chip-label">Average</span>
+              <strong class="chip-val">O(n²)</strong>
+            </div>
+            <div class="comp-chip" id="chip-worst" title="Worst Case: Reverse sorted array">
+              <span class="chip-label">Worst Case</span>
+              <strong class="chip-val">O(n²)</strong>
+            </div>
+            <div class="comp-chip" title="Space Complexity: Auxiliary memory used">
+              <span class="chip-label">Space</span>
+              <strong class="chip-val">O(1)</strong>
+            </div>
+            <div class="comp-chip active-feature" title="Stability: Equal keys preserve relative order">
+              <span class="chip-label">Stable?</span>
+              <strong class="chip-val">Yes ✓</strong>
+            </div>
+            <div class="comp-chip active-feature" title="In-Place: Overwrites array in memory">
+              <span class="chip-label">In-Place?</span>
+              <strong class="chip-val">Yes ✓</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 3: Multi-Language Implementation Code Viewer -->
+      <div class="learning-card card-glass code-tabs-card">
+        <div class="card-head">
+          <div class="head-title">
+            <span class="head-icon">💻</span>
+            <h3>Implementation Code</h3>
+          </div>
+          <div class="code-tab-buttons" role="tablist" aria-label="Programming Languages">
+            <button class="code-tab-btn active" role="tab" aria-selected="true" data-lang="python">Python</button>
+            <button class="code-tab-btn" role="tab" aria-selected="false" data-lang="javascript">JavaScript</button>
+            <button class="code-tab-btn" role="tab" aria-selected="false" data-lang="java">Java</button>
+            <button class="code-tab-btn" role="tab" aria-selected="false" data-lang="c">C</button>
+          </div>
+          <button id="btn-copy-code" class="btn btn-xs btn-secondary" title="Copy code to clipboard">
+            📋 Copy
+          </button>
+        </div>
+        <div class="code-display-body">
+          <pre class="code-block"><code id="code-snippet-pre"></code></pre>
+        </div>
+      </div>
+
+      <!-- Panel 4: Live Comparison Chart (Canvas) & Real-Life Analogy -->
+      <div class="learning-card card-glass chart-analogy-card">
+        <div class="card-head">
+          <div class="head-title">
+            <span class="head-icon">📊</span>
+            <h3>Comparisons Chart vs Theoretical Bounds</h3>
+          </div>
+          <span class="badge-subtle">Live Plot</span>
+        </div>
+        
+        <div class="chart-canvas-container">
+          <canvas id="complexity-chart" width="480" height="190" aria-label="Chart comparing actual vs theoretical comparisons"></canvas>
+          <div class="chart-legend">
+            <span class="chart-key key-best"><span class="chart-line-sample sample-best"></span> Best: n-1</span>
+            <span class="chart-key key-avg"><span class="chart-line-sample sample-avg"></span> Avg: n²/4</span>
+            <span class="chart-key key-worst"><span class="chart-line-sample sample-worst"></span> Worst: n(n-1)/2</span>
+            <span class="chart-key key-actual"><span class="chart-line-sample sample-actual"></span> Current Run</span>
+          </div>
+        </div>
+
+        <!-- Real-Life Card Metaphor Section -->
+        <div class="analogy-footer">
+          <div class="analogy-icon">🃏</div>
+          <div class="analogy-body">
+            <strong>The "Bridge Hand" Intuition:</strong>
+            <p>
+              Imagine holding cards in your left hand. You pick up the next unsorted card with your right hand (the <strong>key</strong>), scan your left hand from right to left, shift cards that are greater to make room, and slide the key into its exact sorted position.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: VIVA & EXAMINER PREPARATION ACCORDION -->
+    <section class="viva-section card-glass" aria-label="College Project Viva & Interview Guide">
+      <div class="viva-header" id="viva-toggle" role="button" tabindex="0" aria-expanded="false">
+        <div class="viva-title-wrap">
+          <span class="viva-icon">🎓</span>
+          <div>
+            <h3>Viva Voce & Technical Defense Guide</h3>
+            <p>Key examiner questions, trade-offs, and why Insertion Sort matters in production systems.</p>
+          </div>
+        </div>
+        <span class="accordion-arrow" id="viva-arrow">▼</span>
+      </div>
+
+      <div class="viva-content collapsed" id="viva-content">
+        <div class="viva-qa-grid">
+          <div class="viva-qa-card">
+            <h4>Q1: Why study Insertion Sort if it's O(n²)?</h4>
+            <p>
+              <strong>Production Impact:</strong> Both Python's <code>Timsort</code> and standard C++ <code>std::sort</code> (Introsort) switch to Insertion Sort for subarrays with size &le; 16 to 32 elements. Why? It has minimal constant factor overhead, zero recursion stack overhead, and exceptional CPU cache locality.
+            </p>
+          </div>
+
+          <div class="viva-qa-card">
+            <h4>Q2: What does "Adaptive" mean here?</h4>
+            <p>
+              An algorithm is <em>adaptive</em> if its runtime improves when the input possesses existing order. Insertion sort achieves <strong>O(n)</strong> time on already-sorted or nearly-sorted data, performing only $n - 1$ comparisons and $0$ shifts.
+            </p>
+          </div>
+
+          <div class="viva-qa-card">
+            <h4>Q3: Why is Insertion Sort Stable?</h4>
+            <p>
+              Because we use <code>while A[j] > key</code> (strictly greater). When an identical duplicate element is encountered, the comparison terminates immediately, placing the new key <em>after</em> the existing equal element, preserving original relative order.
+            </p>
+          </div>
+
+          <div class="viva-qa-card">
+            <h4>Q4: How does it compare to Selection Sort & Bubble Sort?</h4>
+            <p>
+              Selection sort always takes $\Theta(n^2)$ comparisons even if already sorted. Bubble sort requires full swaps (3 writes). Insertion sort only performs shifts (1 write per movement), making it twice as fast in practice.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Project Footer -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <strong>Insertion Sort Educational Visualizer</strong> &bull; Graded Project
+      </div>
+      <div class="footer-center">
+        <span>Designed with HTML5, CSS3 FLIP Animations & Vanilla Web Audio</span>
+      </div>
+      <div class="footer-right">
+        <span class="student-badge">Student: <strong>CS Department</strong> | Section A</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: KEYBOARD SHORTCUTS -->
+  <div id="shortcuts-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card card-glass">
+      <div class="modal-head">
+        <h3 id="modal-title">⌨️ Keyboard Shortcuts</h3>
+        <button id="btn-close-modal" class="btn-close" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="shortcuts-list">
+        <div class="shortcut-row"><kbd>Space</kbd> <span>Play / Pause animation</span></div>
+        <div class="shortcut-row"><kbd>→</kbd> (Right Arrow) <span>Step Forward one micro-step</span></div>
+        <div class="shortcut-row"><kbd>←</kbd> (Left Arrow) <span>Step Backward one micro-step</span></div>
+        <div class="shortcut-row"><kbd>R</kbd> <span>Reset array to initial state</span></div>
+        <div class="shortcut-row"><kbd>M</kbd> <span>Toggle Sound FX on / off</span></div>
+        <div class="shortcut-row"><kbd>T</kbd> <span>Toggle Dark / Light Theme</span></div>
+        <div class="shortcut-row"><kbd>C</kbd> <span>Toggle Cards vs Bars visual mode</span></div>
+        <div class="shortcut-row"><kbd>?</kbd> <span>Show this shortcuts helper</span></div>
+      </div>
+      <div class="modal-foot">
+        <button id="btn-modal-ok" class="btn btn-sm btn-primary">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT -->
+  <script src="script.js"></script>
+</body>
+</html>
